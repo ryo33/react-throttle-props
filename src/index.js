@@ -6,22 +6,22 @@ function getDisplayName(component) {
   return component.displayName || component.name
 }
 
-function throttleProps(component, wait) {
+function throttleProps(component, wait, options) {
   class Throttle extends Component {
     constructor(props, context) {
       super(props, context)
-      this.state = {props}
-      this.throttledSetState = throttle(this.setState, wait);
+      this.state = {}
+      this.throttledSetState = throttle(nextState => this.setState(nextState), wait, options)
     }
-
+    componentWillMount() {
+      this.throttledSetState({props: this.props})
+    }
     componentWillReceiveProps(nextProps) {
       this.throttledSetState({props: nextProps})
     }
-
-    shouldComponentUpdate(nextProps, nextState) {
-      return this.state !== nextState
+    componentWillUnmount() {
+      this.throttledSetState.cancel()
     }
-
     render() {
       return createElement(component, this.state.props)
     }
