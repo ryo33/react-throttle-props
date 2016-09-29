@@ -1,64 +1,29 @@
 import React, { Component, createElement } from 'react'
 import hoistStatics from 'hoist-non-react-statics'
+import throttle from 'lodash.throttle'
 
 function getDisplayName(component) {
   return component.displayName || component.name
 }
 
-function throttle(component, wait) {
+function throttleProps(component, wait) {
   class Throttle extends Component {
     constructor(props, context) {
       super(props, context)
-      this.countDown = wait
-      this.lastTime = Date.now()
-      this.timeout = null
-      this.update = this.update.bind(this)
+      this.state = {props}
+      this.throttledSetState = throttle(this.setState, wait);
     }
 
-    clearTimer() {
-      if (this.timeout !== null) {
-        clearTimeout(this.timeout)
-        this.timeout = null
-      }
+    componentWillReceiveProps(nextProps) {
+      this.throttledSetState({props: nextProps})
     }
 
-    beforeUpdate() {
-      this.countDown = wait
-      this.lastTime = Date.now()
-    }
-
-    update() {
-      this.beforeUpdate()
-      this.timeout = null
-      this.forceUpdate()
-    }
-
-    componentWillMount() {
-      this.update()
-    }
-
-    componentWillUnmount() {
-      this.clearTimer()
-    }
-
-    shouldComponentUpdate() {
-      this.clearTimer()
-
-      const now = Date.now()
-      this.countDown -= now - this.lastTime
-      this.lastTime = now
-
-      if (this.countDown <= 0) {
-        this.beforeUpdate()
-        return true
-      } else {
-        this.timeout = setTimeout(this.update, this.countDown)
-        return false
-      }
+    shouldComponentUpdate(nextProps, nextState) {
+      return this.state !== nextState
     }
 
     render() {
-      return createElement(component, this.props)
+      return createElement(component, this.state.props)
     }
   }
 
@@ -67,4 +32,4 @@ function throttle(component, wait) {
   return hoistStatics(Throttle, component)
 }
 
-export default throttle
+export default throttleProps
